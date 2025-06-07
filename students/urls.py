@@ -3,6 +3,6 @@ from students.api import StudentViewSet
 
 router = routers.DefaultRouter()
 
-router.register('api/students', StudentViewSet, 'students')
+router.register('students', StudentViewSet, 'students')
 
 urlpatterns = router.urls
