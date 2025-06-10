@@ -3,6 +3,6 @@ from professor.api import ProfessorViewSet
 
 router = routers.DefaultRouter()
 
-router.register('professor', ProfessorViewSet, 'professor')
+router.register('', ProfessorViewSet, '')
 
 urlpatterns = router.urls
