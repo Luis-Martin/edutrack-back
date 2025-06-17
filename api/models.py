@@ -78,10 +78,20 @@ class Student(User):
 
 class Course(models.Model):
     STUDY_PLAN_CHOICES = [
-        (2001, '2001'),
-        (2015, '2015'),
-        (2019, '2019'),
-    ]    
+        (2001, 2001),
+        (2015, 2015),
+        (2019, 2019),
+    ]
+    COURSE_TYPE_CHOICES = [
+        ('Electivo', 'Electivo'),
+        ('Obligatorio', 'Obligatorio'),
+    ]
+    STUDY_TYPE_CHOICES = [
+        ('Especialidad', 'Especialidad'),
+        ('Específico', 'Específico'),
+        ('General', 'General'),
+    ]
+
     id_course = models.AutoField(primary_key=True)
     name = models.CharField(
         max_length=100
@@ -117,6 +127,14 @@ class Course(models.Model):
             MinValueValidator(1000),
             MaxValueValidator(99999999)
         ]
+    )
+    course_type = models.CharField(
+        choices=COURSE_TYPE_CHOICES,
+        default="Obligatorio"
+    )
+    study_type = models.CharField(
+        choices=STUDY_TYPE_CHOICES,
+        default="Especialidad"
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
