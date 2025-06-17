@@ -28,3 +28,18 @@ class StudentSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
+
+class Courseerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Course
+        fields = [
+            'id_course',
+            'name',
+            'study_cycle',
+            'credits',
+            'duration_weeks',
+            'theory_hours',
+            'practice_hours',
+            'study_plan',
+            'subject_code',
+        ]

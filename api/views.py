@@ -91,3 +91,5 @@ def student_profile(request):
     serializer = serializers.StudentSerializer(instance=student)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+# COURE
