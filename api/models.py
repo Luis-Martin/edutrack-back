@@ -1,6 +1,8 @@
+from datetime import date
 from django.contrib.auth.models import User
 from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator
 from django.db import models
+from django.shortcuts import get_object_or_404
 import re
 
 class Professor(User):
@@ -34,11 +36,14 @@ class Professor(User):
     # Validamos la estructura correcta del email y colocamos que el username sea el mismo que el email
     def save(self, *args, **kwargs):
         if self.email:
-            if not re.match(r'^\d{10}@unfv\.edu\.pe$', self.email):
-                raise ValueError("El email debe tener el formato: 10 dígitos seguidos de '@unfv.edu.pe'")
+            if not re.match(r'^\w{5,15}@unfv\.edu\.pe$', self.email):
+                raise ValueError("El email debe tener el formato: entre 5 y 15 caracteres seguidos de '@unfv.edu.pe'")
         if self.email:
             self.username = self.email
         super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.get_full_name()
 
     class Meta:
         verbose_name = "Professor"
@@ -70,6 +75,9 @@ class Student(User):
         if self.email:
             self.username = self.email
         super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.get_full_name()
 
     class Meta:
         verbose_name = "Student"
@@ -140,6 +148,93 @@ class Course(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return self.name
+
     class Meta:
         verbose_name = "Course"
         verbose_name_plural = "Courses"
+
+
+class OpenCourse(models.Model):
+    PROFESSIONAL_CAREER_CHOICES = [
+        ("Ingeniería Informática","Ingeniería Informática"),
+        ("Ingeniería de Telecomunicaciones","Ingeniería de Telecomunicaciones"),
+        ("Ingeniería Electrónica","Ingeniería Electrónica"),
+        ("Ingeniería Mecatrónica","Ingeniería Mecatrónica"),
+    ]
+    SECTION_CHOICES = [
+        ('A','A'),
+        ('B','B'),
+        ('C','C'),
+        ('D','D'),
+    ]
+
+    id_open_course = models.AutoField(primary_key=True)
+    id_professor = models.ForeignKey('Professor', on_delete=models.CASCADE)
+    id_course = models.ForeignKey('Course', on_delete=models.CASCADE)
+    
+    start_class = models.DateField()
+    end_class = models.DateField()
+    
+    academic_year = models.PositiveSmallIntegerField(
+        default=date.today().year
+    )
+    academic_semester = models.SmallIntegerField(
+        validators=[
+            MinValueValidator(0),
+            MaxValueValidator(4)
+        ],
+        default=1
+    )
+    
+    professional_career = models.CharField(
+        choices=PROFESSIONAL_CAREER_CHOICES
+    )
+    section = models.CharField(
+        choices=SECTION_CHOICES,
+        default='A'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.id_course} ({self.academic_year}-{self.academic_semester}) | {self.id_professor}"
+
+    class Meta:
+        verbose_name = "OpenCourse"
+        verbose_name_plural = "OpenCourses"
+
+
+class Schedule(models.Model):
+    DAY_WEEK_CHOICES = [
+        (0, 'Lunes'),
+        (1, 'Martes'),
+        (2, 'Miércoles'),
+        (3, 'Jueves'),
+        (4, 'Viernes'),
+        (5, 'Sábado'),
+        (6, 'Domingo'),
+    ]
+
+    id_schedule = models.AutoField(primary_key=True)
+    id_open_course = models.ForeignKey(OpenCourse, on_delete=models.CASCADE, related_name='schedules')
+
+    day_week = models.SmallIntegerField(
+        choices=DAY_WEEK_CHOICES
+    )
+    start_hour = models.TimeField()
+    end_hour = models.TimeField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        # Buscar el nombre del día correspondiente al valor de day_week
+        day_name = dict(self.DAY_WEEK_CHOICES).get(self.day_week, self.day_week)
+        return f"{self.id_open_course} | {day_name} {self.start_hour} {self.end_hour}"
+
+    class Meta:
+        verbose_name = "Schedule"
+        verbose_name_plural = "Schedules"
