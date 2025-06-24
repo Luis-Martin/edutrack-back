@@ -29,7 +29,7 @@ class StudentSerializer(serializers.ModelSerializer):
             'updated_at',
         ]
 
-class Courseerializer(serializers.ModelSerializer):
+class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Course
         fields = [

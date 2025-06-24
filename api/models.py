@@ -238,3 +238,4 @@ class Schedule(models.Model):
     class Meta:
         verbose_name = "Schedule"
         verbose_name_plural = "Schedules"
+

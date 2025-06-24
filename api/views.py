@@ -66,11 +66,11 @@ def student_register(request):
     student.set_password(request.data['password'])
     student.save()
     return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 # Login de estudiantes.
 # 1. Recibe email y contraseña.
 # 2. Busca estudiante y valida contraseña.
 # 3. Devuelve token y datos del estudiante.
-
 @api_view(['POST'])
 def student_login(request):
     student = get_object_or_404(models.Student, email=request.data['email'])
@@ -92,4 +92,19 @@ def student_profile(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# COURE
+# COURSE
+
+# Listado de cursos.
+# 1. Requiere autenticación.
+# 2. Devuelve todos los cursos solo si el usuario autenticado es un profesor.
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def courses(request):
+    user = request.user
+    # Verifica que el usuario autenticado sea un profesor
+    if not hasattr(user, 'professor'):
+        return Response({"error": "Solo los profesores pueden acceder a este recurso."}, status=status.HTTP_403_FORBIDDEN)
+    courses = models.Course.objects.all()
+    serializer = serializers.CourseSerializer(instance=courses, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
