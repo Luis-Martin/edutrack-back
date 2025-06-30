@@ -43,3 +43,33 @@ class CourseSerializer(serializers.ModelSerializer):
             'study_plan',
             'subject_code',
         ]
+
+class OpenCourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.OpenCourse
+        fields = [
+            'id_open_course',
+            'id_professor',
+            'id_course',
+            'start_class',
+            'end_class',
+            'academic_year',
+            'academic_semester',
+            'professional_career',
+            'section',
+            'created_at',
+            'updated_at',
+        ]
+
+class ScheduleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Schedule
+        fields = [
+            'id_schedule',
+            'id_open_course',
+            'day_week',
+            'start_hour',
+            'end_hour',
+            'created_at',
+            'updated_at',
+        ]

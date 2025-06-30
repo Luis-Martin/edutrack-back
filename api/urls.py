@@ -12,4 +12,6 @@ urlpatterns = [
     re_path('student/profile', views.student_profile),
     # Course
     re_path('courses', views.courses),
+    # OpenCurse
+    re_path('opencourse', views.opencourse),
 ]
