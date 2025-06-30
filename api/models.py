@@ -239,3 +239,19 @@ class Schedule(models.Model):
         verbose_name = "Schedule"
         verbose_name_plural = "Schedules"
 
+
+class EnrollStudent(models.Model):
+    id_enroll_student = models.AutoField(primary_key=True)
+
+    id_student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    id_open_course = models.ForeignKey(OpenCourse, on_delete=models.CASCADE)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.id_student} | ({self.id_open_course}"
+
+    class Meta:
+        verbose_name = "EnrollStudent"
+        verbose_name_plural = "EnrollStudents"

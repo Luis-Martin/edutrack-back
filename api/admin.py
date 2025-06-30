@@ -4,7 +4,7 @@ from api import models
 @admin.register(models.Professor)
 class ProfessorAdmin(admin.ModelAdmin):
     list_display = ('id_professor', 'username', 'first_name', 'last_name', 'email', 'phone', 'created_at', 'updated_at', 'password')
-    search_fields = ('id_student', 'first_name', 'last_name', 'email')
+    search_fields = ('id_professor', 'first_name', 'last_name', 'email')
     list_filter = ('created_at','updated_at')
 
 @admin.register(models.Student)
@@ -22,11 +22,20 @@ class CourseAdmin(admin.ModelAdmin):
 @admin.register(models.OpenCourse)
 class OpenCourseAdmin(admin.ModelAdmin):
     list_display = ('id_open_course', 'id_professor', 'start_class', 'end_class', 'academic_year', 'academic_semester', 'professional_career', 'section')
-    search_fields = ('id_open_course', 'id_professor')
+    search_fields = ('id_professor__first_name','id_professor__last_name', 'id_professor__email', 'academic_year')
     list_filter = ('created_at','updated_at')
 
 @admin.register(models.Schedule)
 class OpenCourseAdmin(admin.ModelAdmin):
     list_display = ('id_schedule', 'id_open_course', 'day_week', 'start_hour', 'end_hour')
-    search_fields = ('id_schedule', 'id_open_course')
+    search_fields = ('id_open_course__id_professor__first_name','id_open_course__id_professor__last_name', 'id_open_course__id_professor__email',
+                     'id_open_course__academic_year', 'day_week')
+    list_filter = ('created_at','updated_at')
+
+@admin.register(models.EnrollStudent)
+class EnrollStudentAdmin(admin.ModelAdmin):
+    list_display = ('id_enroll_student', 'id_student', 'id_open_course')
+    search_fields = ('id_student__first_name','id_student__last_name', 'id_student__email',
+                     'id_open_course__id_professor__first_name','id_open_course__id_professor__last_name', 'id_open_course__id_professor__email',
+                     'id_open_course__academic_year')
     list_filter = ('created_at','updated_at')

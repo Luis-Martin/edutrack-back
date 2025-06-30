@@ -10,6 +10,7 @@ urlpatterns = [
     path('professor/login', professor_login),
     path('professor/profile', professor_profile),
     path('professor/opencourse', professor_opencourse),
+    #path('professor/enrollstudent', enrollstudent),
     # Student
     path('student/register', student_register),
     path('student/login', student_login),
