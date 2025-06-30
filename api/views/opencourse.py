@@ -26,7 +26,7 @@ def professor_opencourse(request):
 
 def _create_opencourse(request, user):
     try:
-        
+
         professor = get_object_or_404(models.Professor, email=user.email)
         
         if 'open_course' not in request.data: return Response({"error": "Se requiere el campo 'open_course'"}, status=400)
@@ -74,8 +74,10 @@ def _create_opencourse(request, user):
 def _list_professor_opencourses(request, user):
     try:
         professor = get_object_or_404(models.Professor, email=user.email)
+        
         open_courses = models.OpenCourse.objects.filter(id_professor=professor.id_professor)
         response_data = []
+        
         for open_course in open_courses:
             open_course_serializer = serializers.OpenCourseSerializer(instance=open_course)
             schedules = models.Schedule.objects.filter(id_open_course=open_course.id_open_course)
@@ -83,6 +85,8 @@ def _list_professor_opencourses(request, user):
             open_course_data = open_course_serializer.data.copy()
             open_course_data["schedule"] = schedule_serializer.data
             response_data.append(open_course_data)
+        
         return Response(response_data, status=200)
+    
     except Exception as e:
         return Response({"error": f"Error interno del servidor: {str(e)}"}, status=500) 
