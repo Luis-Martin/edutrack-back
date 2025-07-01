@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 
+# Vista para obtener la lista de cursos, solo accesible para profesores autenticados
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -16,7 +17,10 @@ def courses(request):
     if not hasattr(user, 'professor'):
         return Response({"error": "Solo los profesores pueden acceder a este recurso."}, status=status.HTTP_403_FORBIDDEN)
     
+    # Obtiene todos los cursos de la base de datos
     courses = models.Course.objects.all()
+    # Serializa la lista de cursos
     serializer = serializers.CourseSerializer(instance=courses, many=True)
     
+    # Retorna la lista de cursos serializados
     return Response(serializer.data, status=status.HTTP_200_OK) 

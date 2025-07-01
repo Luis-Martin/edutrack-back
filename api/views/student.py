@@ -8,38 +8,51 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 
+# Vista para registrar un nuevo estudiante
 @api_view(['POST'])
 def student_register(request):
+    # Serializa los datos recibidos y agrega el username igual al email
     serializer = serializers.StudentSerializer(data={**request.data, 'username': request.data['email']})
     
+    # Valida los datos del estudiante
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+    # Crea y guarda el nuevo estudiante
     student = serializer.create(serializer.validated_data)
     student.set_password(request.data['password'])
     student.save()
     
+    # Retorna los datos del estudiante creado
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
+# Vista para login de estudiante
 @api_view(['POST'])
 def student_login(request):
+    # Busca al estudiante por email
     student = get_object_or_404(models.Student, email=request.data['email'])
     
+    # Verifica la contraseña
     if not student.check_password(request.data['password']):
         return Response({"error": "Invalid username or password"}, status=status.HTTP_400_BAD_REQUEST)
     
+    # Obtiene o crea el token de autenticación
     token, created = Token.objects.get_or_create(user=student)
     serializer = serializers.StudentSerializer(instance=student)
     
+    # Retorna el token y los datos del estudiante
     return Response({"token": token.key, "student": serializer.data}, status=status.HTTP_200_OK)
 
 
+# Vista para obtener el perfil del estudiante autenticado
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def student_profile(request):
+    # Busca al estudiante por email
     student = get_object_or_404(models.Student, email=request.data['email'])
     serializer = serializers.StudentSerializer(instance=student)
     
+    # Retorna los datos del estudiante
     return Response(serializer.data, status=status.HTTP_200_OK) 
