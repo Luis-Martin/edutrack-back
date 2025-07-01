@@ -21,7 +21,7 @@ class CourseAdmin(admin.ModelAdmin):
 
 @admin.register(models.OpenCourse)
 class OpenCourseAdmin(admin.ModelAdmin):
-    list_display = ('id_open_course', 'id_professor', 'start_class', 'end_class', 'academic_year', 'academic_semester', 'professional_career', 'section')
+    list_display = ('id_open_course', 'id_professor', 'id_course', 'start_class', 'end_class', 'academic_year', 'academic_semester', 'professional_career', 'section')
     search_fields = ('id_professor__first_name','id_professor__last_name', 'id_professor__email', 'academic_year')
     list_filter = ('created_at','updated_at')
 
