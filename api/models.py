@@ -250,8 +250,37 @@ class EnrollStudent(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.id_student} | ({self.id_open_course}"
+        return f"{self.id_student} | {self.id_open_course}"
 
     class Meta:
         verbose_name = "EnrollStudent"
         verbose_name_plural = "EnrollStudents"
+
+
+class Attendance(models.Model):
+    ATTENDANCE_CHOICES = [
+        (0, 'Presente'),
+        (1, 'Ausente'),
+        (2, 'Tardanza'),
+    ]
+
+    id_attendance = models.AutoField(primary_key=True)
+    id_enroll_student = models.ForeignKey(EnrollStudent, on_delete=models.CASCADE)
+
+    date = models.DateField()
+    attendance = models.SmallIntegerField(
+        choices=ATTENDANCE_CHOICES,
+        default=0
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.id_enroll_student} | {self.date} | {self.attendance}"
+
+    class Meta:
+        verbose_name = "Attendance"
+        verbose_name_plural = "Attendances"
+
+

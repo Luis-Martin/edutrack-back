@@ -84,3 +84,16 @@ class EnrollStudentSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
+
+class AttendanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Attendance
+        fields = [
+            'id_attendance',
+            'id_enroll_student',
+            'date',
+            'attendance',
+            'created_at',
+            'updated_at',
+        ]
+    

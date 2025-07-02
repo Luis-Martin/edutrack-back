@@ -39,3 +39,11 @@ class EnrollStudentAdmin(admin.ModelAdmin):
                      'id_open_course__id_professor__first_name','id_open_course__id_professor__last_name', 'id_open_course__id_professor__email',
                      'id_open_course__academic_year')
     list_filter = ('created_at','updated_at')
+
+@admin.register(models.Attendance)
+class AttendanceAdmin(admin.ModelAdmin):
+    list_display = ('id_attendance', 'id_enroll_student', 'date', 'attendance')
+    search_fields = ('id_enroll_student__id_student__first_name','id_enroll_student__id_student__last_name', 'id_enroll_student__id_student__email',
+                     'id_enroll_student__id_open_course__id_professor__first_name','id_enroll_student__id_open_course__id_professor__last_name', 'id_enroll_student__id_open_course__id_professor__email',
+                     'id_enroll_student__id_open_course__academic_year')
+    list_filter = ('created_at','updated_at')
