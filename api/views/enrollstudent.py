@@ -132,3 +132,26 @@ def _list_professor_enrollstudent(request, user):
 
     except Exception as e:
         return Response({"error": f"Error interno del servidor: {str(e)}"}, status=500)
+
+
+# Vista para que un alumno pueda ver cursos al cual está adjuntado (POST)
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def student_enrollstudent(request):
+    user = request.user
+
+    # Verifica que el usuario autenticado sea un estudiante
+    if not hasattr(user, 'student'):
+        return Response({"error": "Solo los estudiantes pueden acceder a este recurso."}, status=403)
+    
+    # Obtener el estudiante autenticado
+    student = get_object_or_404(models.Student, email=request.user)
+    
+    # Obtener todas las inscripciones del estudiante
+    enrollments = models.EnrollStudent.objects.filter(id_student=student.id_student)
+
+    # Serializar las inscripciones (EnrollStudent) para devolver todos los campos
+    enrollments_serializer = serializers.EnrollStudentSerializer(enrollments, many=True)
+
+    return Response(enrollments_serializer.data, status=status.HTTP_200_OK)

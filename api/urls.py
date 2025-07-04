@@ -3,7 +3,7 @@ from api.views.professor import professor_register, professor_login, professor_p
 from api.views.student import student_register, student_login, student_profile
 from api.views.course import courses
 from api.views.opencourse import professor_opencourse
-from api.views.enrollstudent import professor_enrollstudent
+from api.views.enrollstudent import professor_enrollstudent, student_enrollstudent
 from api.views.attendance import professor_attendance
 from api.views.notes import professor_note
 
@@ -20,6 +20,7 @@ urlpatterns = [
     path('student/register', student_register),
     path('student/login', student_login),
     path('student/profile', student_profile),
+    path('student/enrollstudent', student_enrollstudent),
     # Course
     path('courses', courses),
 ]
