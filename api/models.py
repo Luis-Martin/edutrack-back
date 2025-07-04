@@ -284,3 +284,35 @@ class Attendance(models.Model):
         verbose_name_plural = "Attendances"
 
 
+class Note(models.Model):
+    TYPE_NOTE_CHOICES = [
+        ('Evaluación Parcial', 'Evaluación Parcial'),
+        ('Evaluación Final', 'Evaluación Final'),
+        ('Trabajos Académicos', 'Trabajos Académicos'),
+    ]
+    
+    id_note = models.AutoField(primary_key=True)
+    id_enroll_student = models.ForeignKey(EnrollStudent, on_delete=models.CASCADE)
+
+    type_note = models.CharField(
+        choices=TYPE_NOTE_CHOICES,
+        default="Examen"
+    )
+
+    note = models.SmallIntegerField(
+        validators=[
+            MinValueValidator(0),
+            MaxValueValidator(20)
+        ]
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.id_enroll_student} | {self.note}"
+    
+    class Meta:
+        verbose_name = "Note"
+        verbose_name_plural = "Notes"
+

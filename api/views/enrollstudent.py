@@ -35,8 +35,8 @@ def _create_professor_enrollstudent(request, user):
         enrollstudent_data = request.data.copy()
 
         # Validar que se reciban los ids requeridos
-        id_student = enrollstudent_data["id_student"]
-        id_open_course = enrollstudent_data["id_open_course"]
+        id_student = enrollstudent_data.get("id_student")
+        id_open_course = enrollstudent_data.get("id_open_course")
 
         if id_student is None or id_open_course is None:
             return Response(
@@ -67,11 +67,13 @@ def _create_professor_enrollstudent(request, user):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         # Adjuntar Alumno a Curso
-        enrollstudent = serializer.create(serializer.validated_data)
-        enrollstudent.save()
+        enrollstudent = serializer.save()
 
-        # Retorna ids de Alumno a Curso Aperturado 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        # Serializar el enrollstudent creado para devolver todos los campos
+        enrollstudent_serializer = serializers.EnrollStudentSerializer(enrollstudent)
+
+        # Retorna todos los campos del modelo EnrollStudent
+        return Response(enrollstudent_serializer.data, status=status.HTTP_201_CREATED)
 
     except Exception as e:
         # Error genérico para cualquier otro problema
@@ -123,13 +125,10 @@ def _list_professor_enrollstudent(request, user):
         # Obtener todas las inscripciones de estudiantes a ese curso aperturado
         enrollments = models.EnrollStudent.objects.filter(id_open_course=open_course_id)
 
-        # Obtener los estudiantes asociados a esas inscripciones
-        students = [enrollment.id_student for enrollment in enrollments]
+        # Serializar las inscripciones (EnrollStudent) para devolver todos los campos
+        enrollments_serializer = serializers.EnrollStudentSerializer(enrollments, many=True)
 
-        # Serializar los estudiantes
-        students_serializer = serializers.StudentSerializer(students, many=True)
-
-        return Response(students_serializer.data, status=status.HTTP_200_OK)
+        return Response(enrollments_serializer.data, status=status.HTTP_200_OK)
 
     except Exception as e:
         return Response({"error": f"Error interno del servidor: {str(e)}"}, status=500)

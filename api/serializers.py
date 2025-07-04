@@ -96,4 +96,15 @@ class AttendanceSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
-    
+
+class NoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Note
+        fields = [
+            'id_note',
+            'id_enroll_student',
+            'type_note',
+            'note',
+            'created_at',
+            'updated_at',
+        ]

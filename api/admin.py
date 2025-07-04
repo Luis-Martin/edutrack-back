@@ -47,3 +47,10 @@ class AttendanceAdmin(admin.ModelAdmin):
                      'id_enroll_student__id_open_course__id_professor__first_name','id_enroll_student__id_open_course__id_professor__last_name', 'id_enroll_student__id_open_course__id_professor__email',
                      'id_enroll_student__id_open_course__academic_year')
     list_filter = ('created_at','updated_at')
+
+
+@admin.register(models.Note)
+class NoteAdmin(admin.ModelAdmin):
+    list_display = ('id_note', 'id_enroll_student', 'type_note', 'note', 'created_at', 'updated_at')
+    search_fields = ('id_enroll_student__id_student__first_name', 'id_enroll_student__id_student__last_name', 'id_enroll_student__id_student__email', 'type_note')
+    list_filter = ('type_note', 'created_at', 'updated_at')
