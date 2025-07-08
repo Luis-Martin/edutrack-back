@@ -118,7 +118,7 @@ def _list_professor_attendance(request, user):
         if not professor or open_course.id_professor_id != professor.id_professor:
             return Response({"error": "No tiene permisos para ver la asistencia de este curso aperturado."}, status=403)
 
-        # Obtener todas las inscripciones de estudiantes a ese curso aperturado
+        # Obtener todas las matrícula(s) de estudiantes a ese curso aperturado
         enrollments = models.EnrollStudent.objects.filter(id_open_course=id_open_course)
         enroll_ids = [enroll.id_enroll_student for enroll in enrollments]
 
@@ -128,3 +128,34 @@ def _list_professor_attendance(request, user):
         return Response(serializer.data, status=200)
     except Exception as e:
         return Response({"error": f"Error interno del servidor: {str(e)}"}, status=500)
+
+
+# Vista para que un estudiante pueda listar su asistencia en un curso aperturado
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def student_attendance(request):
+    user = request.user
+
+    # Verifica que el usuario autenticado sea un estudiante
+    if not hasattr(user, 'student'):
+        return Response({"error": "Solo los estudiantes pueden acceder a este recurso."}, status=403)
+
+    # Obtener el id_open_course de los parámetros de la petición
+    id_open_course = request.query_params.get('id_open_course') or request.data.get('id_open_course')
+    if not id_open_course:
+        return Response({"error": "Se requiere el campo 'id_open_course' como query param o en el body."}, status=400)
+
+    # Obtener el estudiante autenticado
+    student = get_object_or_404(models.Student, email=user.email)
+
+    # Buscar la matrícula del estudiante en ese curso aperturado
+    enroll = models.EnrollStudent.objects.filter(id_student=student.id_student, id_open_course=id_open_course).first()
+    if not enroll:
+        return Response({"error": "No se encontró matrícula para el estudiante en el curso aperturado especificado."}, status=404)
+
+    # Obtener todas las asistencias de esa matrícula
+    attendances = models.Attendance.objects.filter(id_enroll_student=enroll.id_enroll_student)
+    serializer = serializers.AttendanceSerializer(attendances, many=True)
+
+    return Response(serializer.data, status=status.HTTP_200_OK)
