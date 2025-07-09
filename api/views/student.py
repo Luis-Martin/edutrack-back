@@ -45,14 +45,31 @@ def student_login(request):
     return Response({"token": token.key, "student": serializer.data}, status=status.HTTP_200_OK)
 
 
-# Vista para obtener el perfil del estudiante autenticado
-@api_view(['GET'])
+# Vista para obtener o actualizar el perfil del estudiante autenticado
+@api_view(['GET', 'PUT'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def student_profile(request):
-    # Busca al estudiante por email
-    student = get_object_or_404(models.Student, email=request.data['email'])
-    serializer = serializers.StudentSerializer(instance=student)
-    
-    # Retorna los datos del estudiante
-    return Response(serializer.data, status=status.HTTP_200_OK) 
+    # Obtiene el estudiante autenticado por el usuario del request
+    student = get_object_or_404(models.Student, email=request.user.email)
+
+    if request.method == 'GET':
+        serializer = serializers.StudentSerializer(instance=student)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    elif request.method == 'PUT':
+        data = request.data.copy()
+        
+        # Solo permitir actualizar ciertos campos
+        allowed_fields = ['first_name', 'last_name', 'email', 'phone', 'password']
+        
+        for field in allowed_fields:
+            if field in data:
+                if field == 'password':
+                    student.set_password(data['password'])
+                else:
+                    setattr(student, field, data[field])
+        student.save()
+
+        serializer = serializers.StudentSerializer(instance=student)
+        return Response(serializer.data, status=status.HTTP_200_OK)
