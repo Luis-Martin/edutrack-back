@@ -9,8 +9,8 @@ class ProfessorAdmin(admin.ModelAdmin):
 
 @admin.register(models.Student)
 class StudentAdmin(admin.ModelAdmin):
-    list_display = ('id_student', 'username', 'first_name', 'last_name', 'email', 'phone', 'created_at', 'updated_at', 'password')
-    search_fields = ('id_student', 'first_name', 'last_name', 'email')
+    list_display = ('id_student', 'username', 'first_name', 'last_name', 'email', 'phone', 'career', 'year_admission', 'created_at', 'updated_at', 'password')
+    search_fields = ('id_student', 'first_name', 'last_name', 'email', 'career', 'year_admission')
     list_filter = ('created_at','updated_at')
 
 @admin.register(models.Course)

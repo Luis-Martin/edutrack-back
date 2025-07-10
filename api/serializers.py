@@ -25,6 +25,8 @@ class StudentSerializer(serializers.ModelSerializer):
             'last_name',
             'email',
             'phone',
+            'career',
+            'year_admission',
             'created_at',
             'updated_at',
         ]

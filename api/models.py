@@ -51,6 +51,12 @@ class Professor(User):
 
 
 class Student(User):
+    CAREER_CHOICES = [
+        ("Ingeniería Informática", "Ingeniería Informática"),
+        ("Ingeniería de Telecomunicaciones", "Ingeniería de Telecomunicaciones"),
+        ("Ingeniería Electrónica", "Ingeniería Electrónica"),
+        ("Ingeniería Mecatrónica", "Ingeniería Mecatrónica"),
+    ]
     id_student = models.AutoField(primary_key=True)
 
     phone = models.CharField(
@@ -62,6 +68,17 @@ class Student(User):
             )
         ],
         unique=True
+    )
+
+    career = models.CharField(
+        max_length=40,
+        choices=CAREER_CHOICES
+    )
+    year_admission = models.PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(1900),
+            MaxValueValidator(date.today().year)
+        ]
     )
 
     created_at = models.DateTimeField(auto_now_add=True)

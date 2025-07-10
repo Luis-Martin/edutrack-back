@@ -81,7 +81,6 @@ def _create_professor_enrollstudent(request, user):
 
 
 # Función auxiliar para listar los estudiantes adjuntos a los cursos aperturados por el profesor
-
 def _list_professor_enrollstudent(request, user):
     """
     Dado el id de un curso aperturado (open_course), retorna la lista de alumnos inscritos en ese curso.
@@ -134,24 +133,120 @@ def _list_professor_enrollstudent(request, user):
         return Response({"error": f"Error interno del servidor: {str(e)}"}, status=500)
 
 
-# Vista para que un alumno pueda ver cursos al cual está adjuntado (POST)
+# Vista para que un alumno pueda ver cursos al cual está adjuntado (GET)
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def student_enrollstudent(request):
+    """
+    Permite a un estudiante ver sus inscripciones a cursos aperturados.
+    Si se pasa un id_enroll_student, devuelve solo esa inscripción como objeto.
+    Si no, devuelve todas las inscripciones como lista.
+    """
     user = request.user
 
     # Verifica que el usuario autenticado sea un estudiante
     if not hasattr(user, 'student'):
         return Response({"error": "Solo los estudiantes pueden acceder a este recurso."}, status=403)
-    
+
     # Obtener el estudiante autenticado
-    student = get_object_or_404(models.Student, email=request.user)
-    
-    # Obtener todas las inscripciones del estudiante
+    student = get_object_or_404(models.Student, email=user.email)
+
+    # Obtener el id_enroll_student desde query_params o body (GET)
+    id_enroll_student = _get_id_enroll_student_from_request(request)
+
+    if id_enroll_student:
+        # Si se pasa un id_enroll_student, devolver solo ese objeto
+        enrollment_obj = _get_enrollment_object(id_enroll_student, student)
+        if isinstance(enrollment_obj, Response):
+            return enrollment_obj  # Error response
+        return Response(enrollment_obj, status=status.HTTP_200_OK)
+    else:
+        # Si no se pasa id, devolver todas las inscripciones como lista
+        enrollments_list = _get_all_enrollments_list(student)
+        return Response(enrollments_list, status=status.HTTP_200_OK)
+
+
+def _get_id_enroll_student_from_request(request):
+    """
+    Intenta obtener el id_enroll_student desde query_params o body en una petición GET.
+    """
+    id_enroll_student = request.query_params.get("id_enroll_student")
+    if id_enroll_student is None:
+        try:
+            import json
+            if request.body:
+                body_data = json.loads(request.body.decode('utf-8'))
+                id_enroll_student = body_data.get("id_enroll_student")
+        except Exception:
+            id_enroll_student = None
+    return id_enroll_student
+
+
+def _get_enrollment_object(id_enroll_student, student):
+    """
+    Devuelve un solo objeto de inscripción enriquecido, o un Response de error si no existe.
+    """
+    from api import serializers
+    try:
+        enrollment = models.EnrollStudent.objects.get(
+            id_enroll_student=id_enroll_student,
+            id_student=student.id_student
+        )
+    except models.EnrollStudent.DoesNotExist:
+        return Response(
+            {"error": f"No se encontró la inscripción con id_enroll_student={id_enroll_student} para este estudiante."},
+            status=404
+        )
+
+    open_course = enrollment.id_open_course
+    professor = open_course.id_professor
+    course = open_course.id_course
+
+    open_course_data = serializers.OpenCourseSerializer(open_course).data if open_course else None
+    professor_data = serializers.ProfessorSerializer(professor).data if professor else None
+    course_data = serializers.CourseSerializer(course).data if course else None
+
+    return {
+        "id_enroll_student": enrollment.id_enroll_student,
+        "id_student": enrollment.id_student.id_student if hasattr(enrollment.id_student, 'id_student') else enrollment.id_student,
+        "open_course": open_course_data,
+        "professor": professor_data,
+        "course": course_data,
+        "academic_year": open_course.academic_year if open_course else None,
+        "academic_semester": open_course.academic_semester if open_course else None,
+        "section": open_course.section if open_course else None,
+        "created_at": enrollment.created_at,
+        "updated_at": enrollment.updated_at,
+    }
+
+
+def _get_all_enrollments_list(student):
+    """
+    Devuelve una lista de objetos de inscripciones enriquecidas para el estudiante.
+    """
+    from api import serializers
     enrollments = models.EnrollStudent.objects.filter(id_student=student.id_student)
+    enriched_enrollments = []
+    for enrollment in enrollments:
+        open_course = enrollment.id_open_course
+        professor = open_course.id_professor
+        course = open_course.id_course
 
-    # Serializar las inscripciones (EnrollStudent) para devolver todos los campos
-    enrollments_serializer = serializers.EnrollStudentSerializer(enrollments, many=True)
+        open_course_data = serializers.OpenCourseSerializer(open_course).data if open_course else None
+        professor_data = serializers.ProfessorSerializer(professor).data if professor else None
+        course_data = serializers.CourseSerializer(course).data if course else None
 
-    return Response(enrollments_serializer.data, status=status.HTTP_200_OK)
+        enriched_enrollments.append({
+            "id_enroll_student": enrollment.id_enroll_student,
+            "id_student": enrollment.id_student.id_student if hasattr(enrollment.id_student, 'id_student') else enrollment.id_student,
+            "open_course": open_course_data,
+            "professor": professor_data,
+            "course": course_data,
+            "academic_year": open_course.academic_year if open_course else None,
+            "academic_semester": open_course.academic_semester if open_course else None,
+            "section": open_course.section if open_course else None,
+            "created_at": enrollment.created_at,
+            "updated_at": enrollment.updated_at,
+        })
+    return enriched_enrollments

@@ -45,9 +45,12 @@ def _create_opencourse(request, user):
         # Verifica que se haya enviado el campo 'schedule'
         if 'schedule' not in open_course_data:
             return Response({"error": "Se requiere el campo 'schedule'"}, status=400)
-
+        
         # Verifica que el curso especificado exista
+        print("open_course_data['id_course']")
+        print(open_course_data['id_course'])
         get_object_or_404(models.Course, id_course=open_course_data['id_course'])
+        print("PASS")
 
         # Serializa y valida los datos del curso aperturado
         open_course_serializer = serializers.OpenCourseSerializer(data=open_course_data)

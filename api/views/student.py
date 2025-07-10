@@ -61,7 +61,7 @@ def student_profile(request):
         data = request.data.copy()
         
         # Solo permitir actualizar ciertos campos
-        allowed_fields = ['first_name', 'last_name', 'email', 'phone', 'password']
+        allowed_fields = ['first_name', 'last_name', 'phone', 'password']
         
         for field in allowed_fields:
             if field in data:
