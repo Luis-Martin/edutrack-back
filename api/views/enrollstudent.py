@@ -85,16 +85,17 @@ def _list_professor_enrollstudent(request, user):
     """
     Dado el id de un curso aperturado (open_course), retorna la lista de alumnos inscritos en ese curso.
     Valida que el curso aperturado exista y que pertenezca al profesor autenticado.
+    El id del curso aperturado se obtiene como query parameter (?open_course=...).
     """
     from rest_framework import status
 
     try:
-        # Obtener el id del curso aperturado desde el body
-        open_course_id = request.data.get("open_course", None)
+        # Obtener el id del curso aperturado desde los query parameters
+        open_course_id = request.query_params.get("open_course", None)
 
         if open_course_id is None:
             return Response(
-                {"error": "Se requiere el campo 'open_course'."},
+                {"error": "Se requiere el parámetro 'open_course' en la URL."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -107,7 +108,6 @@ def _list_professor_enrollstudent(request, user):
             )
 
         # Validar que el curso aperturado le pertenezca al profesor autenticado
-        # Obtener el profesor autenticado
         professor = models.Professor.objects.filter(email=user.email).first()
         if not professor:
             return Response(

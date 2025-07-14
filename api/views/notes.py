@@ -123,7 +123,7 @@ def _list_professor_note(request, user):
         return Response({"error": f"Error interno del servidor: {str(e)}"}, status=500)
 
 
-# Vista para que un estudiante pueda listar sus notas en un curso aperturado
+# Vista para que un estudiante pueda listar sus notas usando id_enroll_student como query param
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -134,20 +134,20 @@ def student_note(request):
     if not hasattr(user, 'student'):
         return Response({"error": "Solo los estudiantes pueden acceder a este recurso."}, status=403)
 
-    # Obtener el id_open_course de los parámetros de la petición
-    id_open_course = request.query_params.get('id_open_course') or request.data.get('id_open_course')
-    if not id_open_course:
-        return Response({"error": "Se requiere el campo 'id_open_course' como query param o en el body."}, status=400)
+    # Obtener el id_enroll_student solo de los query params
+    id_enroll_student = request.query_params.get('id_enroll_student')
+    if not id_enroll_student:
+        return Response({"error": "Se requiere el campo 'id_enroll_student' como query param en la URL."}, status=400)
 
     # Obtener el estudiante autenticado
     student = models.Student.objects.filter(email=user.email).first()
     if not student:
         return Response({"error": "No se encontró el estudiante autenticado."}, status=404)
 
-    # Buscar la matrícula del estudiante en ese curso aperturado
-    enroll = models.EnrollStudent.objects.filter(id_student=student.id_student, id_open_course=id_open_course).first()
+    # Buscar la matrícula del estudiante con ese id_enroll_student
+    enroll = models.EnrollStudent.objects.filter(id_student=student.id_student, id_enroll_student=id_enroll_student).first()
     if not enroll:
-        return Response({"error": "No se encontró matrícula para el estudiante en el curso aperturado especificado."}, status=404)
+        return Response({"error": "No se encontró matrícula para el estudiante con el id_enroll_student especificado."}, status=404)
 
     # Obtener todas las notas de esa matrícula
     notes = models.Note.objects.filter(id_enroll_student=enroll.id_enroll_student)

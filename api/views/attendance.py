@@ -27,40 +27,40 @@ def professor_attendance(request):
         return _list_professor_attendance(request, user)
 
 
-# Función auxiliar para crear asistencia de un curso aperturado
+# Función auxiliar para crear asistencia de un curso aperturado usando id_enroll_student
 def _create_professor_attendance(request, user):
     """
-    Dado el id de un curso aperturado (open_course), crea una asistencia para un alumno inscrito en ese curso.
-    Valida que el curso aperturado exista y que pertenezca al profesor autenticado.
-    Valida que el alumno inscrito exista y que pertenezca al curso aperturado.
+    Crea una asistencia para un alumno inscrito en un curso aperturado usando id_enroll_student.
+    Valida que la inscripción exista y que pertenezca a un curso del profesor autenticado.
     Valida que la fecha de la asistencia sea válida.
     Valida que la asistencia sea válida.
     """
     try:
         data = request.data.copy()
-        id_open_course = data.get('id_open_course')
-        id_student = data.get('id_student')
+        id_enroll_student = data.get('id_enroll_student')
         date_attendance = data.get('date')
         attendance_value = data.get('attendance')
 
         # Validar campos requeridos
-        if not id_open_course or not id_student or not date_attendance or attendance_value is None:
-            return Response({"error": "Se requieren los campos 'id_open_course', 'id_student', 'date' y 'attendance'."}, status=400)
+        if not id_enroll_student or not date_attendance or attendance_value is None:
+            return Response({"error": "Se requieren los campos 'id_enroll_student', 'date' y 'attendance'."}, status=400)
 
-        # Validar que el curso aperturado exista
-        open_course = models.OpenCourse.objects.filter(id_open_course=id_open_course).first()
+        # Validar que la inscripción exista
+        enroll = models.EnrollStudent.objects.filter(id_enroll_student=id_enroll_student).first()
+        if not enroll:
+            return Response({"error": f"La inscripción con id {id_enroll_student} no existe."}, status=404)
+
+        # Obtener el curso aperturado desde la inscripción
+        open_course = enroll.id_open_course
+
+        # Validar que el curso aperturado exista (ya está implícito si existe la inscripción)
         if not open_course:
-            return Response({"error": f"El curso aperturado con id {id_open_course} no existe."}, status=404)
+            return Response({"error": "El curso aperturado asociado a la inscripción no existe."}, status=404)
 
         # Validar que el curso pertenezca al profesor autenticado
         professor = models.Professor.objects.filter(email=user.email).first()
         if not professor or open_course.id_professor_id != professor.id_professor:
             return Response({"error": "No tiene permisos para registrar asistencia en este curso aperturado."}, status=403)
-
-        # Validar que el alumno esté inscrito en el curso aperturado
-        enroll = models.EnrollStudent.objects.filter(id_open_course=id_open_course, id_student=id_student).first()
-        if not enroll:
-            return Response({"error": "El alumno no está inscrito en este curso aperturado."}, status=404)
 
         # Validar que la fecha esté dentro del rango del curso
         if not (str(open_course.start_class) <= date_attendance <= str(open_course.end_class)):
@@ -69,7 +69,7 @@ def _create_professor_attendance(request, user):
         # Validar que la fecha corresponda a un día de la semana permitido en el horario del curso
         date_obj = datetime.strptime(date_attendance, "%Y-%m-%d")
         day_week = date_obj.weekday()
-        allowed_days = models.Schedule.objects.filter(id_open_course=id_open_course).values_list('day_week', flat=True)
+        allowed_days = models.Schedule.objects.filter(id_open_course=open_course.id_open_course).values_list('day_week', flat=True)
         if day_week not in allowed_days:
             return Response({"error": "La fecha de asistencia no corresponde a un día de clase según el horario del curso."}, status=400)
 
@@ -77,7 +77,7 @@ def _create_professor_attendance(request, user):
         if int(attendance_value) not in [0, 1, 2]:
             return Response({"error": "El valor de asistencia no es válido. Debe ser 0 (Presente), 1 (Ausente) o 2 (Tardanza)."}, status=400)
 
-        # Evitar duplicados: solo una asistencia por estudiante, curso y fecha
+        # Evitar duplicados: solo una asistencia por inscripción y fecha
         if models.Attendance.objects.filter(id_enroll_student=enroll, date=date_attendance).exists():
             return Response({"error": "Ya existe una asistencia registrada para este alumno en esta fecha."}, status=400)
 
@@ -89,7 +89,8 @@ def _create_professor_attendance(request, user):
         }
         serializer = serializers.AttendanceSerializer(data=attendance_data)
         
-        if not serializer.is_valid(): return Response(serializer.errors, status=400)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
         serializer.save()
         
         return Response(serializer.data, status=201)
@@ -141,16 +142,16 @@ def student_attendance(request):
     if not hasattr(user, 'student'):
         return Response({"error": "Solo los estudiantes pueden acceder a este recurso."}, status=403)
 
-    # Obtener el id_open_course de los parámetros de la petición
-    id_open_course = request.query_params.get('id_open_course') or request.data.get('id_open_course')
-    if not id_open_course:
-        return Response({"error": "Se requiere el campo 'id_open_course' como query param o en el body."}, status=400)
+    # Obtener el id_enroll_student de los parámetros de la petición
+    id_enroll_student = request.query_params.get('id_enroll_student') or request.data.get('id_enroll_student')
+    if not id_enroll_student:
+        return Response({"error": "Se requiere el campo 'id_enroll_student' como query param o en el body."}, status=400)
 
     # Obtener el estudiante autenticado
     student = get_object_or_404(models.Student, email=user.email)
 
     # Buscar la matrícula del estudiante en ese curso aperturado
-    enroll = models.EnrollStudent.objects.filter(id_student=student.id_student, id_open_course=id_open_course).first()
+    enroll = models.EnrollStudent.objects.filter(id_student=student.id_student, id_enroll_student=id_enroll_student).first()
     if not enroll:
         return Response({"error": "No se encontró matrícula para el estudiante en el curso aperturado especificado."}, status=404)
 
