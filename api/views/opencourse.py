@@ -97,10 +97,11 @@ def _create_opencourse(request, user):
         return Response({"error": f"Error interno del servidor: {str(e)}"}, status=500)
 
 
-# Función auxiliar para listar los cursos aperturados por el profesor autenticado, incluyendo sus horarios
+# Función auxiliar para listar los cursos aperturados por el profesor autenticado, incluyendo sus horarios y detalles completos del curso
 def _list_professor_opencourses(request, user):
     """
-    Retorna la lista de cursos aperturados por el profesor autenticado, incluyendo sus horarios.
+    Retorna la lista de cursos aperturados por el profesor autenticado, incluyendo sus horarios
+    y la información completa del curso en el campo 'course' (en vez de 'id_course').
     """
     try:
         # Obtiene la instancia del profesor autenticado
@@ -110,16 +111,31 @@ def _list_professor_opencourses(request, user):
         open_courses = models.OpenCourse.objects.filter(id_professor=professor.id_professor)
         response_data = []
         
-        # Para cada curso aperturado, serializa sus datos y los de sus horarios
+        # Para cada curso aperturado, serializa sus datos, los de sus horarios y el curso completo
         for open_course in open_courses:
             open_course_serializer = serializers.OpenCourseSerializer(instance=open_course)
+            open_course_data = open_course_serializer.data.copy()
+
+            # Serializar el curso completo
+            course_instance = models.Course.objects.filter(id_course=open_course.id_course_id).first()
+            if course_instance:
+                course_serializer = serializers.CourseSerializer(instance=course_instance)
+                open_course_data["course"] = course_serializer.data
+            else:
+                open_course_data["course"] = None
+
+            # Eliminar el campo id_course del resultado
+            if "id_course" in open_course_data:
+                del open_course_data["id_course"]
+
+            # Serializar los horarios
             schedules = models.Schedule.objects.filter(id_open_course=open_course.id_open_course)
             schedule_serializer = serializers.ScheduleSerializer(instance=schedules, many=True)
-            open_course_data = open_course_serializer.data.copy()
             open_course_data["schedule"] = schedule_serializer.data
+
             response_data.append(open_course_data)
         
-        # Retorna la lista de cursos aperturados con sus horarios
+        # Retorna la lista de cursos aperturados con sus horarios y detalles completos del curso
         return Response(response_data, status=200)
     
     except Exception as e:

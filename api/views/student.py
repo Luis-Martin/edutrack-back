@@ -73,3 +73,20 @@ def student_profile(request):
 
         serializer = serializers.StudentSerializer(instance=student)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+# Vista para obtener todos los estudiantes (solo para profesores autenticados)
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def professor_students(request):
+    user = request.user
+
+    # Verifica que el usuario autenticado sea un profesor
+    if not hasattr(user, 'professor'):
+        return Response({"error": "Solo los profesores pueden acceder a este recurso."}, status=403)
+
+    # Obtiene todos los estudiantes
+    students = models.Student.objects.all()
+    serializer = serializers.StudentSerializer(students, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)

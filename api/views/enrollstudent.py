@@ -124,10 +124,27 @@ def _list_professor_enrollstudent(request, user):
         # Obtener todas las inscripciones de estudiantes a ese curso aperturado
         enrollments = models.EnrollStudent.objects.filter(id_open_course=open_course_id)
 
-        # Serializar las inscripciones (EnrollStudent) para devolver todos los campos
-        enrollments_serializer = serializers.EnrollStudentSerializer(enrollments, many=True)
+        # Para cada inscripción, incluir la información del estudiante
+        result = []
+        for enrollment in enrollments:
+            # Serializar la inscripción
+            enrollment_data = serializers.EnrollStudentSerializer(enrollment).data
 
-        return Response(enrollments_serializer.data, status=status.HTTP_200_OK)
+            # Obtener y serializar el estudiante
+            student = models.Student.objects.filter(id_student=enrollment.id_student_id).first()
+            if student:
+                student_data = serializers.StudentSerializer(student).data
+            else:
+                student_data = None
+
+            # Reemplazar el campo id_student por el objeto student
+            enrollment_data["student"] = student_data
+            if "id_student" in enrollment_data:
+                del enrollment_data["id_student"]
+
+            result.append(enrollment_data)
+
+        return Response(result, status=status.HTTP_200_OK)
 
     except Exception as e:
         return Response({"error": f"Error interno del servidor: {str(e)}"}, status=500)
@@ -250,3 +267,44 @@ def _get_all_enrollments_list(student):
             "updated_at": enrollment.updated_at,
         })
     return enriched_enrollments
+
+
+# Vista para que un profesor pueda eliminar alumnos en un curso aperturado
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def professor_deleteenrollstudent(request):
+    """
+    Elimina la inscripción de un alumno (id_student) en un curso aperturado (id_open_course).
+    Solo profesores autenticados pueden realizar esta acción.
+    """
+    from api import models
+    from django.shortcuts import get_object_or_404
+    from rest_framework.response import Response
+
+    user = request.user
+
+    # Verifica que el usuario autenticado sea un profesor
+    if not hasattr(user, 'professor'):
+        return Response({"error": "Solo los profesores pueden acceder a este recurso."}, status=403)
+
+    id_student = request.data.get("id_student")
+    id_open_course = request.data.get("id_open_course")
+
+    if not id_student or not id_open_course:
+        return Response({"error": "Se requieren los campos 'id_student' y 'id_open_course'."}, status=400)
+
+    # Verifica que el curso aperturado pertenezca al profesor autenticado
+    open_course = get_object_or_404(models.OpenCourse, id_open_course=id_open_course)
+    if open_course.id_professor.id_professor != user.professor.id_professor:
+        return Response({"error": "No tiene permisos para modificar este curso."}, status=403)
+
+    # Busca la inscripción
+    try:
+        enrollment = models.EnrollStudent.objects.get(id_student=id_student, id_open_course=id_open_course)
+    except models.EnrollStudent.DoesNotExist:
+        return Response({"error": "La inscripción no existe."}, status=404)
+
+    # Elimina la inscripción
+    enrollment.delete()
+    return Response({"message": "Inscripción eliminada correctamente."}, status=200)
