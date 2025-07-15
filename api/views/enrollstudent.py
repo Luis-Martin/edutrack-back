@@ -8,7 +8,7 @@ from api import models, serializers
 
 
 # Vista para que un profesor pueda adjuntar (POST) o listar (GET) alumnos en un curso aperturado
-@api_view(['GET', 'POST'])
+@api_view(['GET', 'POST', 'DELETE'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def professor_enrollstudent(request):
@@ -24,6 +24,9 @@ def professor_enrollstudent(request):
     # Ver los alumno adjuntos a un Curso
     elif request.method == 'GET':
         return _list_professor_enrollstudent(request, user)
+    # Eliminar inscripción de alumno en curso aperturado
+    elif request.method == 'DELETE':
+        return _delete_professor_enrollstudent(request, user)
 
 
 # Función auxiliar para adjuntar estudiantes a un curso aperturado
@@ -269,42 +272,36 @@ def _get_all_enrollments_list(student):
     return enriched_enrollments
 
 
-# Vista para que un profesor pueda eliminar alumnos en un curso aperturado
-@api_view(['POST'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def professor_deleteenrollstudent(request):
+# Función auxiliar para eliminar inscripción de alumno en curso aperturado
+
+def _delete_professor_enrollstudent(request, user):
     """
     Elimina la inscripción de un alumno (id_student) en un curso aperturado (id_open_course).
     Solo profesores autenticados pueden realizar esta acción.
     """
-    from api import models
-    from django.shortcuts import get_object_or_404
-    from rest_framework.response import Response
-
-    user = request.user
-
-    # Verifica que el usuario autenticado sea un profesor
-    if not hasattr(user, 'professor'):
-        return Response({"error": "Solo los profesores pueden acceder a este recurso."}, status=403)
-
-    id_student = request.data.get("id_student")
-    id_open_course = request.data.get("id_open_course")
-
-    if not id_student or not id_open_course:
-        return Response({"error": "Se requieren los campos 'id_student' y 'id_open_course'."}, status=400)
-
-    # Verifica que el curso aperturado pertenezca al profesor autenticado
-    open_course = get_object_or_404(models.OpenCourse, id_open_course=id_open_course)
-    if open_course.id_professor.id_professor != user.professor.id_professor:
-        return Response({"error": "No tiene permisos para modificar este curso."}, status=403)
-
-    # Busca la inscripción
     try:
-        enrollment = models.EnrollStudent.objects.get(id_student=id_student, id_open_course=id_open_course)
-    except models.EnrollStudent.DoesNotExist:
-        return Response({"error": "La inscripción no existe."}, status=404)
+        # Permitir recibir los parámetros por body (JSON) o query params
+        id_student = request.data.get("id_student") or request.query_params.get("id_student")
+        id_open_course = request.data.get("id_open_course") or request.query_params.get("id_open_course")
 
-    # Elimina la inscripción
-    enrollment.delete()
-    return Response({"message": "Inscripción eliminada correctamente."}, status=200)
+        if not id_student or not id_open_course:
+            return Response({"error": "Se requieren los campos 'id_student' y 'id_open_course'."}, status=400)
+
+        # Verifica que el curso aperturado pertenezca al profesor autenticado
+        open_course = models.OpenCourse.objects.filter(id_open_course=id_open_course).first()
+        if not open_course:
+            return Response({"error": f"El curso aperturado con id {id_open_course} no existe."}, status=404)
+        professor = user.professor
+        if open_course.id_professor.id_professor != professor.id_professor:
+            return Response({"error": "No tiene permisos para modificar este curso."}, status=403)
+
+        # Busca la inscripción
+        enrollment = models.EnrollStudent.objects.filter(id_student=id_student, id_open_course=id_open_course).first()
+        if not enrollment:
+            return Response({"error": "La inscripción no existe."}, status=404)
+
+        # Elimina la inscripción
+        enrollment.delete()
+        return Response({"message": "Inscripción eliminada correctamente."}, status=200)
+    except Exception as e:
+        return Response({"error": f"Error interno del servidor: {str(e)}"}, status=500)
